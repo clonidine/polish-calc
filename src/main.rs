@@ -1,5 +1,5 @@
 /// Represents an operation in an expression.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Op {
     Add,
     Sub,
@@ -8,14 +8,14 @@ pub enum Op {
 }
 
 /// Represents an expression in an arithmetic expression.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Expr {
     Num(Num),
     Op(Op),
 }
 
 /// Represents a numerical value in an arithmetic expression.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Num(f32);
 
 /// Represents a Reverse Polish Notation (RPN) stack.
@@ -66,14 +66,32 @@ impl Rpn {
     }
 }
 
-/// Represents a parser for arithmetic expressions.
+// Represents a parser for Expr tokens
 pub struct ExprParser<'a> {
-    pub input: &'a str,
+  pub tokens: &'a Vec<Expr>,
 }
 
 impl<'a> ExprParser<'a> {
-    /// Parses the input string into a vector of tokens.
-    pub fn parse(&self) -> Vec<Expr> {
+  // Build a RPN stack
+  pub fn parse(&self) -> Rpn {
+    let mut rpn = Rpn::new();
+    
+    for token in self.tokens {
+      rpn.push(*token);
+    }
+    
+    rpn
+  }
+}
+
+/// Represents a lexer for arithmetic expressions.
+pub struct ExprLexer<'a> {
+    pub input: &'a str,
+}
+
+impl<'a> ExprLexer<'a> {
+    /// Tokenizes the input string into a vector of tokens.
+    pub fn tokenize(&self) -> Vec<Expr> {
         if self.input.is_empty() {
             return vec![Expr::Num(Num(0.0))];
         }
@@ -95,20 +113,20 @@ impl<'a> ExprParser<'a> {
 }
 
 pub fn calculate(expression: &str) -> f32 {
-    let parser = ExprParser { input: expression };
+    let lexer = ExprLexer { input: expression };
 
-    let tokens = parser.parse();
+    let tokens = lexer.tokenize();
+  
+    let parser = ExprParser { tokens: &tokens };
 
-    let mut rpn = Rpn::new();
-
-    for token in tokens.into_iter() {
-        rpn.push(token);
-    }
-
-    if rpn.0.len() > 1 {
-        return rpn.0[rpn.0.len() - 1];
-    }
-
+    let rpn = parser.parse();
+  
+    let rpn_len = rpn.0.len();
+  
+    if rpn_len > 1 {
+      return rpn.0[rpn_len - 1];
+  }
+  
     rpn.0[0]
 }
 
